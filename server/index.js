@@ -4,6 +4,8 @@ import { createServer } from 'http';
 import { Server } from 'socket.io';
 import cors from 'cors';
 import connectDB from './config/db.js';
+import authRouter from './routes/auth.js';
+
 
 const app = express();
 const server = createServer(app);
@@ -17,7 +19,7 @@ const io = new Server(server, {
 
 app.use(cors({ origin: process.env.CLIENT_URL || 'http://localhost:5173' }));
 app.use(express.json());
-
+app.use('/api/auth', authRouter);
 app.get('/', (req, res) => res.json({ status: 'API running' }));
 
 io.on('connection', (socket) => {
