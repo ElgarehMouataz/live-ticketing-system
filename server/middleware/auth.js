@@ -1,5 +1,6 @@
 import jwt from 'jsonwebtoken';
 
+
 const auth = (req, res, next) => {
     const authHeader = req.headers.authorization;
     if (!authHeader?.startsWith('Bearer '))
@@ -14,5 +15,6 @@ const auth = (req, res, next) => {
         res.status(401).json({ message: 'Invalid or expired token' });
     }
 };
+
 
 export default auth;
