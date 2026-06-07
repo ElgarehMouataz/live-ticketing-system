@@ -7,6 +7,7 @@ import connectDB from './config/db.js';
 import authRouter from './routes/auth.js';
 import socketAuth from './middleware/socketAuth.js'
 import Ticket from './models/Ticket.js';
+import Message from './models/Message.js';
 
 
 const app = express();
@@ -57,6 +58,56 @@ io.on('connection', (socket) => {
             if (studentSocket) studentSocket.join(room);
 
             io.to(room).emit('ticket:claimed', ticket);
+        } catch (err) {
+            socket.emit('error', { message: err.message });
+        }
+    });
+    socket.on('chat:message_send', async ({ ticketId, text, attachment }) => {
+        try {
+            const message = await Message.create({
+                ticketId,
+                senderUsername: socket.username,
+                text,
+                attachment: attachment || null,
+            });
+            io.to(`ticket:${ticketId}`).emit('chat:message_received', message);
+        } catch (err) {
+            socket.emit('error', { message: err.message });
+        }
+    });
+
+    socket.on('chat:reaction_toggle', async ({ messageId, emoji }) => {
+        try {
+            const message = await Message.findById(messageId);
+            const reaction = message.reactions.find(r => r.emoji === emoji);
+            if (!reaction) {
+                await Message.findByIdAndUpdate(messageId, {
+                    $push: { reactions: { emoji, usernames: [socket.username] } }
+                });
+            } else if (reaction.usernames.includes(socket.username)) {
+                await Message.findByIdAndUpdate(messageId, {
+                    $pull: { 'reactions.$[r].usernames': socket.username }
+                }, { arrayFilters: [{ 'r.emoji': emoji }] });
+            } else {
+                await Message.findByIdAndUpdate(messageId, {
+                    $addToSet: { 'reactions.$[r].usernames': socket.username }
+                }, { arrayFilters: [{ 'r.emoji': emoji }] });
+            }
+            const updated = await Message.findById(messageId);
+            io.to(`ticket:${updated.ticketId}`).emit('chat:reaction_updated', updated);
+        } catch (err) {
+            socket.emit('error', { message: err.message });
+        }
+    });
+
+    socket.on('ticket:resolve', async ({ ticketId }) => {
+        try {
+            const ticket = await Ticket.findByIdAndUpdate(
+                ticketId,
+                { status: 'resolved' },
+                { new: true }
+            );
+            io.to(`ticket:${ticketId}`).emit('ticket:update', ticket);
         } catch (err) {
             socket.emit('error', { message: err.message });
         }
