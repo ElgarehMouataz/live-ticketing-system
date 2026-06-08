@@ -2,7 +2,7 @@ import express from 'express';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
-import auth from '../middleware/auth.js';
+import { protect } from '../middleware/auth.js';
 
 const router = express.Router();
 
@@ -52,7 +52,7 @@ router.post('/register', async (req, res) => {
     }
 });
 
-router.get('/me', auth, (req, res) => {
+router.get('/me', protect, (req, res) => {
     res.json({ user: req.user });
 });
 export default router;

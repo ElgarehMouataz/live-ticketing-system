@@ -8,6 +8,9 @@ import authRouter from './routes/auth.js';
 import socketAuth from './middleware/socketAuth.js'
 import Ticket from './models/Ticket.js';
 import Message from './models/Message.js';
+import usersRouter from './routes/users.js';
+import ticketsRouter from './routes/tickets.js';
+
 
 
 const app = express();
@@ -23,6 +26,8 @@ io.use(socketAuth);
 app.use(cors({ origin: process.env.CLIENT_URL || 'http://localhost:5173' }));
 app.use(express.json());
 app.use('/api/auth', authRouter);
+app.use('/api/users', usersRouter);
+app.use('/api/tickets', ticketsRouter);
 app.get('/', (req, res) => res.json({ status: 'API running' }));
 
 io.on('connection', (socket) => {
