@@ -63,11 +63,11 @@ export default function Login() {
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', fontSize: '0.95rem' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                             <span style={{ color: '#fff', fontWeight: '500' }}>Student:</span>
-                            <span style={{ fontFamily: 'monospace', color: '#fff', background: 'rgba(255,255,255,0.1)', padding: '4px 8px', borderRadius: '4px' }}>student_demo / password123</span>
+                            <span style={{ fontFamily: 'monospace', color: '#ffffff', background: 'rgba(0,0,0,0.35)', padding: '4px 8px', borderRadius: '4px', border: '1px solid rgba(255,255,255,0.15)' }}>student_demo / password123</span>
                         </div>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                             <span style={{ color: '#fff', fontWeight: '500' }}>Agent:</span>
-                            <span style={{ fontFamily: 'monospace', color: '#fff', background: 'rgba(255,255,255,0.1)', padding: '4px 8px', borderRadius: '4px' }}>agent_demo / password123</span>
+                            <span style={{ fontFamily: 'monospace', color: '#ffffff', background: 'rgba(0,0,0,0.35)', padding: '4px 8px', borderRadius: '4px', border: '1px solid rgba(255,255,255,0.15)' }}>agent_demo / password123</span>
                         </div>
                     </div>
                 </div>

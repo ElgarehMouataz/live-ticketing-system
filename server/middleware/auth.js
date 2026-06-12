@@ -9,7 +9,7 @@ export const protect = (req, res, next) => {
     const token = authHeader.split(' ')[1];
 
     try {
-        req.user = jwt.verify(token, process.env.JWT_SECRET);
+        req.user = jwt.verify(token, process.env.JWT_SECRET, { algorithms: ['HS256'] });
         next();
     } catch (err) {
         res.status(401).json({ message: 'Invalid or expired token' });

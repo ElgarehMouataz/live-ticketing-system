@@ -1,0 +1,115 @@
+name: Security & Logic Scan
+
+# Triggers: runs on every push to main and on every Pull Request targeting main.
+# This means every time you upload code to GitHub, this check runs automatically.
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  security-scan:
+    name: Run Security Audit
+    runs-on: ubuntu-latest   # GitHub spins up a fresh, temporary Linux machine for this
+
+    steps:
+      # Step 1: Download your code onto the temporary machine
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # Step 2: Install Node.js (same version you use locally)
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: server/package-lock.json
+
+      # Step 3: Install project dependencies cleanly (does NOT run scripts)
+      - name: Install server dependencies
+        run: npm ci
+        working-directory: server
+
+      # Step 4: Run npm audit — checks all packages against the public CVE database.
+      # --audit-level=high means the job only FAILS if a HIGH or CRITICAL vuln is found.
+      # Medium/Low issues are reported but won't block your push.
+      - name: npm audit (dependency vulnerability check)
+        run: npm audit --audit-level=high
+        working-directory: server
+        continue-on-error: true   # report findings without hard-blocking the pipeline for now
+
+      # Step 5: Install ESLint and security plugins as dev tools (not persisted to your repo)
+      - name: Install ESLint security plugins
+        run: npm install --no-save eslint eslint-plugin-security eslint-plugin-promise
+        working-directory: server
+
+      # Step 6: Run ESLint against all server JS files using security rules.
+      # Output is saved to eslint-report.txt inside the workflow machine.
+      - name: ESLint security & promise checks
+        run: |
+          npx eslint . \
+            --ext .js \
+            --rule '{"security/detect-object-injection":"error","security/detect-non-literal-fs-filename":"warn","security/detect-possible-timing-attacks":"warn","promise/always-return":"warn","no-eval":"error"}' \
+            --plugin security \
+            --plugin promise \
+            --format stylish \
+            --output-file ../eslint-report.txt || true
+        working-directory: server
+
+      # Step 7: Scan for hard-coded secret patterns (API keys, tokens, passwords).
+      # Uses a simple grep — does not require any external tool installation.
+      - name: Secret pattern scan
+        run: |
+          echo "## Secret Pattern Scan" > secret-scan.txt
+          echo "Searching for potential hard-coded secrets in tracked files..." >> secret-scan.txt
+          git grep -rn \
+            -e "API_KEY\s*=" \
+            -e "SECRET\s*=" \
+            -e "PASSWORD\s*=" \
+            -e "TOKEN\s*=" \
+            -e "PRIVATE_KEY" \
+            -- ":(exclude)*.md" \
+               ":(exclude)*.env.example" \
+               ":(exclude)node_modules/" \
+            >> secret-scan.txt 2>&1 || echo "No hard-coded secrets found." >> secret-scan.txt
+          cat secret-scan.txt
+
+      # Step 8: Combine all findings into a single markdown report
+      - name: Generate security report
+        run: |
+          {
+            echo "# Security Scan Report"
+            echo "Generated: $(date -u)"
+            echo "Commit: ${{ github.sha }}"
+            echo ""
+            echo "## npm Audit Summary"
+            npm audit --audit-level=none --json 2>/dev/null | node -e "
+              const d=require('fs').readFileSync('/dev/stdin','utf8');
+              try {
+                const a=JSON.parse(d);
+                const v=a.metadata?.vulnerabilities||{};
+                console.log('| Severity | Count |');
+                console.log('|---|---|');
+                Object.entries(v).forEach(([k,n])=>console.log(\`| \${k} | \${n} |\`));
+              } catch(e) { console.log('Could not parse audit output.'); }
+            " || echo "npm audit data unavailable"
+            echo ""
+            echo "## ESLint Findings"
+            cat eslint-report.txt 2>/dev/null || echo "No ESLint report generated."
+            echo ""
+            echo "## Secret Pattern Scan"
+            cat secret-scan.txt 2>/dev/null || echo "No secret scan report generated."
+          } > security_report.md
+          cat security_report.md
+        working-directory: server
+
+      # Step 9: Upload the report as a downloadable artifact.
+      # After each run, go to: GitHub → your repo → Actions → latest run → Artifacts
+      # and download "security-report" to view the full findings.
+      - name: Upload security report artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: security-report
+          path: server/security_report.md
+          retention-days: 30   # report is kept for 30 days then auto-deleted

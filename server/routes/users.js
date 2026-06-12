@@ -1,5 +1,5 @@
 import express from 'express';
-import bcrypt from 'bcryptjs';
+import bcrypt from 'bcrypt';
 import { protect } from '../middleware/auth.js';
 import { upload } from '../config/cloudinary.js';
 import User from '../models/User.js';
@@ -51,6 +51,19 @@ router.put('/profile/password', protect, async (req, res) => {
 router.put('/profile/settings', protect, async (req, res) => {
     try {
         const { theme, fontSize, language } = req.body;
+
+        // Strict enum validation — only known values accepted
+        const VALID = {
+            theme:    ['light', 'dark'],
+            fontSize: ['small', 'medium', 'large'],
+            language: ['en', 'fr', 'de'],
+        };
+        if (theme    && !VALID.theme.includes(theme))
+            return res.status(400).json({ error: `Invalid theme: ${theme}` });
+        if (fontSize && !VALID.fontSize.includes(fontSize))
+            return res.status(400).json({ error: `Invalid fontSize: ${fontSize}` });
+        if (language && !VALID.language.includes(language))
+            return res.status(400).json({ error: `Invalid language: ${language}` });
 
         const user = await User.findByIdAndUpdate(
             req.user.userId,

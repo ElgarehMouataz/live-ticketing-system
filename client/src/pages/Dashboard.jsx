@@ -56,15 +56,23 @@ export default function Dashboard() {
         selectedIdRef.current = selectedId;
     }, [selectedId]);
 
+    // Clear typing timer on unmount to prevent state updates on dead component
+    useEffect(() => {
+        return () => clearTimeout(typingTimer.current);
+    }, []);
+
     const authHeaders = { Authorization: `Bearer ${token}` };
     const selected = tickets.find(t => t._id === selectedId);
 
     // Fetch tickets on mount
     useEffect(() => {
         fetch(`${API}/api/tickets`, { headers: authHeaders })
-            .then(r => r.json())
-            .then(data => { if (Array.isArray(data)) setTickets(data); })
-            .catch(() => {});
+            .then(r => {
+                if (r.status === 401) { navigate('/login'); return null; }
+                return r.json();
+            })
+            .then(data => { if (data && Array.isArray(data)) setTickets(data); })
+            .catch(() => showToast('Failed to load tickets. Check your connection.'));
     }, []);
 
     // Socket event bindings
@@ -146,6 +154,7 @@ export default function Dashboard() {
             setHasMore(msgs.length >= 30);
             setTimeout(() => messagesEndRef.current?.scrollIntoView(), 50);
         } catch {
+            showToast('Could not load messages.');
             setMessages([]);
         }
     };
@@ -410,7 +419,7 @@ export default function Dashboard() {
                                         {statusLabel(selected.status)}
                                     </span>
                                 </div>
-                                {selected.status !== 'resolved' && (
+                                {selected.status !== 'resolved' && role === 'agent' && (
                                     <button className="resolve-btn" onClick={handleResolve}>
                                         {t('resolve')}
                                     </button>
@@ -475,6 +484,7 @@ export default function Dashboard() {
                                                 autoComplete="off"
                                                 disabled={uploading}
                                                 className="main-input"
+                                                maxLength={2000}
                                             />
 
                                             <div className="emoji-container">

@@ -126,3 +126,29 @@ CLOUDINARY_API_SECRET=<api_secret>
 cd server && npm install && npm run dev
 cd client && npm install && npm run dev
 ```
+
+## Known Technical Limitations & Scaling Considerations
+As a portfolio demonstration piece, this architecture prioritizes core functionality and security over massive horizontal scale. If this were deployed for 10,000+ users, the following enterprise upgrades would be required:
+1. **Token Revocation:** Currently, JWTs are cleared client-side on logout. A production environment would require short-lived tokens with a Redis-backed token blacklist to immediately revoke stolen sessions.
+2. **Socket Throttling:** `express-rate-limit` handles auth routes, but Socket token-bucket algorithms must be implemented to prevent WebSocket message spam.
+3. **Message Delivery Guarantees:** The current UI lacks an offline queue. An "optimistic UI" implementation with local caching is needed to guarantee message delivery if a WebSocket disconnects mid-transmission.
+4. **Search Indexing:** While compound indexes handle pagination (`ticketId` + `createdAt`), a dedicated MongoDB Text Index or Elasticsearch cluster is needed for performant keyword searching across thousands of old tickets.
+
+## Development Roadmap
+
+### Phase 1: Core Platform & Security (Completed)
+- Real-time WebSockets messaging and typing indicators.
+- Role-Based Access Control (RBAC) and stealth admin provisioning.
+- Immutable demo accounts and secure database seeding.
+- Cloudinary integration for avatars and attachments.
+
+### Phase 2: Multi-Tenant SaaS Architecture (Upcoming)
+- **Data Isolation:** Strict separation of tickets, agents, and students per establishment.
+- **Socket Segmentation:** Dynamic socket rooms (`org_<id>_agents`) to prevent cross-organization data leakage.
+- **Branded Portals:** UI updates to reflect the specific school or organization the user belongs to.
+
+### Phase 3: Advanced Functionality (Future)
+- **Online Presence:** Track and display live user connectivity status.
+- **Read Receipts:** Unread badges and message view tracking.
+- **Analytics Dashboard:** Platform-wide metrics for admins.
+- **Rich Text:** Markdown integration for technical support messages.

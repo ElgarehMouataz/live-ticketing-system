@@ -3,6 +3,8 @@ import express from 'express';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
 import cors from 'cors';
+import helmet from 'helmet';
+import rateLimit from 'express-rate-limit';
 import connectDB from './config/db.js';
 import authRouter from './routes/auth.js';
 import socketAuth from './middleware/socketAuth.js'
@@ -24,8 +26,21 @@ const io = new Server(server, {
     },
 });
 io.use(socketAuth);
+// Security headers (CSP, HSTS, X-Frame-Options, etc.)
+app.use(helmet());
+
+// Body size cap — prevents JSON bomb DoS
+app.use(express.json({ limit: '10kb' }));
+
 app.use(cors({ origin: process.env.CLIENT_URL || 'http://localhost:5173' }));
-app.use(express.json());
+
+// Brute-force protection: max 20 auth attempts per 15 minutes per IP
+const authLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 20,
+    message: { error: 'Too many attempts — try again in 15 minutes.' }
+});
+app.use('/api/auth', authLimiter);
 app.use('/api/auth', authRouter);
 app.use('/api/users', usersRouter);
 app.use('/api/tickets', ticketsRouter);
@@ -63,12 +78,21 @@ io.on('connection', async (socket) => {
     });
 
     socket.on('ticket:claim', async ({ ticketId }) => {
+        // Role guard — only agents can claim tickets
+        if (socket.role !== 'agent' && socket.role !== 'admin')
+            return socket.emit('error', { message: 'Only agents can claim tickets.' });
+
         try {
-            const ticket = await Ticket.findByIdAndUpdate(
-                ticketId,
+            // Atomic update: only succeeds if ticket is still unclaimed (agentId === null)
+            // This prevents two agents from racing to claim the same ticket.
+            const ticket = await Ticket.findOneAndUpdate(
+                { _id: ticketId, agentId: null },
                 { agentId: socket.userId, status: 'active' },
                 { new: true }
             );
+
+            if (!ticket)
+                return socket.emit('error', { message: 'Ticket already claimed or not found.' });
 
             const room = `ticket:${ticketId}`;
             socket.join(room);
@@ -83,11 +107,32 @@ io.on('connection', async (socket) => {
         }
     });
 
-    socket.on('ticket:join', ({ ticketId }) => {
-        socket.join(`ticket:${ticketId}`);
+    socket.on('ticket:join', async ({ ticketId }) => {
+        // Verify the socket user is actually a participant of this ticket
+        // before allowing them to join the room and receive its messages.
+        try {
+            const ticket = await Ticket.findById(ticketId).select('studentId agentId');
+            if (!ticket)
+                return socket.emit('error', { message: 'Ticket not found.' });
+
+            const isParticipant =
+                String(ticket.studentId) === socket.userId ||
+                String(ticket.agentId)   === socket.userId ||
+                socket.role === 'admin';
+
+            if (!isParticipant)
+                return socket.emit('error', { message: 'Unauthorized to join this ticket room.' });
+
+            socket.join(`ticket:${ticketId}`);
+        } catch (err) {
+            socket.emit('error', { message: err.message });
+        }
     });
 
     socket.on('chat:message_send', async ({ ticketId, text, attachment }) => {
+        if (text && text.length > 2000)
+            return socket.emit('error', { message: 'Message exceeds 2000 characters.' });
+
         try {
             const message = await Message.create({
                 ticketId,
@@ -126,6 +171,10 @@ io.on('connection', async (socket) => {
     });
 
     socket.on('ticket:resolve', async ({ ticketId }) => {
+        // Role guard — only agents or admins can resolve tickets
+        if (socket.role !== 'agent' && socket.role !== 'admin')
+            return socket.emit('error', { message: 'Only agents can resolve tickets.' });
+
         try {
             const ticket = await Ticket.findByIdAndUpdate(
                 ticketId,

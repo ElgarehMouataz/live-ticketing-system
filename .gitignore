@@ -4,3 +4,8 @@ node_modules/
 package-lock.json
 test.html
 implementation_plan.md
+
+# Security scan outputs — kept local/private, never committed
+security_report.md
+eslint-report.txt
+secret-scan.txt

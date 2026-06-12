@@ -10,9 +10,9 @@ export default function Settings() {
     const { language, setLanguage, t } = useContext(LanguageContext);
     const navigate = useNavigate();
 
-    const token = localStorage.getItem('token');
-    const storedAvatar = localStorage.getItem('avatarUrl');
-    const username = localStorage.getItem('username') || '';
+    const token = sessionStorage.getItem('token');
+    const storedAvatar = sessionStorage.getItem('avatarUrl');
+    const username = sessionStorage.getItem('username') || '';
 
     const [avatarUrl, setAvatarUrl] = useState(storedAvatar || '');
     const [pwForm, setPwForm] = useState({ currentPassword: '', newPassword: '' });
