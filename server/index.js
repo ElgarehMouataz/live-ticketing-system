@@ -10,6 +10,7 @@ import Ticket from './models/Ticket.js';
 import Message from './models/Message.js';
 import usersRouter from './routes/users.js';
 import ticketsRouter from './routes/tickets.js';
+import adminRouter from './routes/admin.js';
 
 
 
@@ -28,10 +29,23 @@ app.use(express.json());
 app.use('/api/auth', authRouter);
 app.use('/api/users', usersRouter);
 app.use('/api/tickets', ticketsRouter);
+app.use('/api/admin', adminRouter);
 app.get('/', (req, res) => res.json({ status: 'API running' }));
 
-io.on('connection', (socket) => {
+io.on('connection', async (socket) => {
     console.log(`Socket connected:    ${socket.id}`);
+
+    // Auto-join rooms for existing active tickets so reconnecting users
+    // can resume receiving messages without re-claiming.
+    try {
+        const query = socket.role === 'agent'
+            ? { agentId: socket.userId, status: { $ne: 'resolved' } }
+            : { studentId: socket.userId, status: { $ne: 'resolved' } };
+        const active = await Ticket.find(query).select('_id');
+        active.forEach(t => socket.join(`ticket:${t._id}`));
+    } catch (err) {
+        console.error('Room auto-join failed:', err.message);
+    }
 
     socket.on('ticket:create', async (data) => {
         try {
@@ -41,6 +55,7 @@ io.on('connection', (socket) => {
                 urgency: data.urgency || 'low',
             });
 
+            socket.join(`ticket:${ticket._id}`);
             io.emit('ticket:new_broadcast', ticket);
         } catch (err) {
             socket.emit('error', { message: err.message });
@@ -51,7 +66,7 @@ io.on('connection', (socket) => {
         try {
             const ticket = await Ticket.findByIdAndUpdate(
                 ticketId,
-                { agentId: socket.userId, status: 'in-progress' },
+                { agentId: socket.userId, status: 'active' },
                 { new: true }
             );
 
@@ -62,11 +77,16 @@ io.on('connection', (socket) => {
             const studentSocket = studentSockets.find(s => s.userId === String(ticket.studentId));
             if (studentSocket) studentSocket.join(room);
 
-            io.to(room).emit('ticket:claimed', ticket);
+            io.emit('ticket:update', ticket);
         } catch (err) {
             socket.emit('error', { message: err.message });
         }
     });
+
+    socket.on('ticket:join', ({ ticketId }) => {
+        socket.join(`ticket:${ticketId}`);
+    });
+
     socket.on('chat:message_send', async ({ ticketId, text, attachment }) => {
         try {
             const message = await Message.create({
@@ -116,6 +136,22 @@ io.on('connection', (socket) => {
         } catch (err) {
             socket.emit('error', { message: err.message });
         }
+    });
+
+    socket.on('chat:typing_start', ({ ticketId }) => {
+        socket.to(`ticket:${ticketId}`).emit('chat:typing_update', {
+            ticketId,
+            username: socket.username,
+            isTyping: true,
+        });
+    });
+
+    socket.on('chat:typing_stop', ({ ticketId }) => {
+        socket.to(`ticket:${ticketId}`).emit('chat:typing_update', {
+            ticketId,
+            username: socket.username,
+            isTyping: false,
+        });
     });
 
     socket.on('disconnect', () => {

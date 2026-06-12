@@ -30,6 +30,10 @@ router.put('/profile/password', protect, async (req, res) => {
         if (!currentPassword || !newPassword)
             return res.status(400).json({ error: 'Both fields required' });
 
+        if (req.user.username && req.user.username.endsWith('_demo')) {
+            return res.status(403).json({ error: 'Demo accounts cannot change passwords.' });
+        }
+
         const user = await User.findById(req.user.userId);
         const match = await bcrypt.compare(currentPassword, user.password);
         if (!match) return res.status(401).json({ error: 'Current password incorrect' });

@@ -22,13 +22,19 @@ router.post('/login', async (req, res) => {
             { expiresIn: '7d' }
         );
 
-        res.json({ token, settings: user.settings });
+        res.json({ 
+            token, 
+            username: user.username, 
+            role: user.role, 
+            avatarUrl: user.avatarUrl, 
+            settings: user.settings 
+        });
     } catch (err) {
         res.status(500).json({ message: err.message });
     }
 });
 router.post('/register', async (req, res) => {
-    const { username, password, role, avatarUrl, settings } = req.body;
+    const { username, password } = req.body;
 
     if (!username || !password)
         return res.status(400).json({ message: 'Username and password are required' });
@@ -41,9 +47,7 @@ router.post('/register', async (req, res) => {
         const user = await User.create({
             username,
             password: hashed,
-            role,
-            avatarUrl,
-            settings,
+            role: 'student',
         });
 
         res.status(201).json({ message: 'User created', userId: user._id });

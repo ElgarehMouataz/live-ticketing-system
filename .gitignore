@@ -3,3 +3,4 @@ realtime_chat_plan.md
 node_modules/
 package-lock.json
 test.html
+implementation_plan.md
