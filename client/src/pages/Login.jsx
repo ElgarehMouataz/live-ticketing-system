@@ -49,6 +49,28 @@ export default function Login() {
                     <h2>Welcome back.</h2>
                     <p>Log in to your agent or student dashboard to manage your real-time support tickets.</p>
                 </div>
+                
+                <div style={{
+                    marginTop: '40px',
+                    padding: '20px',
+                    background: 'rgba(255,255,255,0.05)',
+                    borderRadius: '12px',
+                    border: '1px solid rgba(255,255,255,0.1)'
+                }}>
+                    <h3 style={{ fontSize: '0.9rem', color: '#888', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '1px' }}>
+                        Portfolio Demo Accounts
+                    </h3>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', fontSize: '0.95rem' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <span style={{ color: '#fff', fontWeight: '500' }}>Student:</span>
+                            <span style={{ fontFamily: 'monospace', color: '#fff', background: 'rgba(255,255,255,0.1)', padding: '4px 8px', borderRadius: '4px' }}>student_demo / password123</span>
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <span style={{ color: '#fff', fontWeight: '500' }}>Agent:</span>
+                            <span style={{ fontFamily: 'monospace', color: '#fff', background: 'rgba(255,255,255,0.1)', padding: '4px 8px', borderRadius: '4px' }}>agent_demo / password123</span>
+                        </div>
+                    </div>
+                </div>
             </div>
             
             <div className="auth-form-side">
