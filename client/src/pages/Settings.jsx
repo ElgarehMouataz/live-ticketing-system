@@ -15,6 +15,7 @@ export default function Settings() {
     const username = sessionStorage.getItem('username') || '';
 
     const [avatarUrl, setAvatarUrl] = useState(storedAvatar || '');
+    const isDemo = username.endsWith('_demo');
     const [pwForm, setPwForm] = useState({ currentPassword: '', newPassword: '' });
     const [pwMsg, setPwMsg] = useState({ text: '', type: '' });
     const [settingsMsg, setSettingsMsg] = useState({ text: '', type: '' });
@@ -72,7 +73,7 @@ export default function Settings() {
             const data = await res.json();
             if (!res.ok) throw new Error(data.error);
             setAvatarUrl(data.avatarUrl);
-            localStorage.setItem('avatarUrl', data.avatarUrl);
+            sessionStorage.setItem('avatarUrl', data.avatarUrl);
             setAvatarMsg({ text: 'Updated', type: 'success' });
         } catch (err) {
             setAvatarMsg({ text: err.message || 'Upload failed', type: 'error' });
@@ -168,28 +169,42 @@ export default function Settings() {
 
             <div className="settings-section">
                 <h2>{t('changePassword')}</h2>
-                <form className="password-form" onSubmit={changePassword}>
-                    <input
-                        type="password"
-                        placeholder={t('currentPassword')}
-                        value={pwForm.currentPassword}
-                        onChange={e => setPwForm(p => ({ ...p, currentPassword: e.target.value }))}
-                        required
-                        autoComplete="current-password"
-                    />
-                    <input
-                        type="password"
-                        placeholder={t('newPassword')}
-                        value={pwForm.newPassword}
-                        onChange={e => setPwForm(p => ({ ...p, newPassword: e.target.value }))}
-                        required
-                        autoComplete="new-password"
-                    />
-                    <button type="submit">{t('updatePassword')}</button>
-                    {pwMsg.text && (
-                        <p className={`settings-msg ${pwMsg.type}`}>{pwMsg.text}</p>
-                    )}
-                </form>
+                {isDemo ? (
+                    <div style={{
+                        padding: '16px',
+                        background: 'var(--bg-tertiary)',
+                        border: '1px solid var(--border)',
+                        borderRadius: '10px',
+                        color: 'var(--text-secondary)',
+                        fontSize: '0.9rem',
+                        opacity: 0.7
+                    }}>
+                        Password changes are disabled for demo accounts.
+                    </div>
+                ) : (
+                    <form className="password-form" onSubmit={changePassword}>
+                        <input
+                            type="password"
+                            placeholder={t('currentPassword')}
+                            value={pwForm.currentPassword}
+                            onChange={e => setPwForm(p => ({ ...p, currentPassword: e.target.value }))}
+                            required
+                            autoComplete="current-password"
+                        />
+                        <input
+                            type="password"
+                            placeholder={t('newPassword')}
+                            value={pwForm.newPassword}
+                            onChange={e => setPwForm(p => ({ ...p, newPassword: e.target.value }))}
+                            required
+                            autoComplete="new-password"
+                        />
+                        <button type="submit">{t('updatePassword')}</button>
+                        {pwMsg.text && (
+                            <p className={`settings-msg ${pwMsg.type}`}>{pwMsg.text}</p>
+                        )}
+                    </form>
+                )}
             </div>
         </div>
     );

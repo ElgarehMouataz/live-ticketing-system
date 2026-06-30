@@ -46,6 +46,23 @@ export default function AdminLogin() {
                 </div>
                 <h1 style={{ textAlign: 'center', marginBottom: '8px' }}>Restricted Portal</h1>
                 <p className="subtitle" style={{ textAlign: 'center', marginBottom: '24px' }}>Authorized IT personnel only.</p>
+                
+                <div style={{
+                    marginBottom: '24px',
+                    padding: '12px',
+                    background: 'rgba(239, 68, 68, 0.1)',
+                    borderRadius: '8px',
+                    border: '1px solid rgba(239, 68, 68, 0.2)'
+                }}>
+                    <h3 style={{ fontSize: '0.85rem', color: '#ef4444', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '1px', textAlign: 'center' }}>
+                        Demo Credentials
+                    </h3>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.9rem' }}>
+                        <span style={{ color: '#fff', fontWeight: '500' }}>Admin:</span>
+                        <span style={{ fontFamily: 'monospace', color: '#ef4444', background: 'rgba(0,0,0,0.5)', padding: '4px 8px', borderRadius: '4px' }}>admin_demo / password123</span>
+                    </div>
+                </div>
+
                 <form onSubmit={handleSubmit}>
                     <div className="field-group">
                         <label>Admin ID</label>

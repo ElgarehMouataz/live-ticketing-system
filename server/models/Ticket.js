@@ -1,6 +1,7 @@
 import mongoose from 'mongoose';
 
 const ticketSchema = new mongoose.Schema({
+    organizationId: { type: mongoose.Schema.Types.ObjectId, ref: 'Organization', required: true },
     studentId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
     agentId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
     subject: { type: String, required: true },

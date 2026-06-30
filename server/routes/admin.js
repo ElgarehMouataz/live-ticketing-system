@@ -33,6 +33,11 @@ router.post('/agents', async (req, res) => {
             return res.status(409).json({ message: 'Username already taken' });
         }
 
+        // Prevent demo account from provisioning users
+        if (req.user.username === 'admin_demo') {
+            return res.status(403).json({ message: 'Demo Admin accounts are restricted from provisioning new agents.' });
+        }
+
         const hashed = await bcrypt.hash(password, 10);
         const agent = await User.create({
             username,

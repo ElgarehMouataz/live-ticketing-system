@@ -10,6 +10,7 @@ import authRouter from './routes/auth.js';
 import socketAuth from './middleware/socketAuth.js'
 import Ticket from './models/Ticket.js';
 import Message from './models/Message.js';
+import User from './models/User.js';
 import usersRouter from './routes/users.js';
 import ticketsRouter from './routes/tickets.js';
 import adminRouter from './routes/admin.js';
@@ -140,7 +141,13 @@ io.on('connection', async (socket) => {
                 text,
                 attachment: attachment || null,
             });
-            io.to(`ticket:${ticketId}`).emit('chat:message_received', message);
+
+            // Fetch user's avatar to include in the broadcast
+            const user = await User.findOne({ username: socket.username }).select('avatarUrl').lean();
+            const msgObj = message.toObject();
+            msgObj.senderAvatarUrl = user?.avatarUrl || '';
+
+            io.to(`ticket:${ticketId}`).emit('chat:message_received', msgObj);
         } catch (err) {
             socket.emit('error', { message: err.message });
         }

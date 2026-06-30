@@ -1,7 +1,7 @@
 import http from 'http';
 
 const register = (username, role) => {
-    const data = JSON.stringify({ username, password: 'password123', role });
+    const data = JSON.stringify({ username, password: 'password123', role, inviteCode: 'DEMO-ORG' });
     const options = {
         hostname: 'localhost',
         port: 5000,

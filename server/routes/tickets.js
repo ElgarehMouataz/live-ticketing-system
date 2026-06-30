@@ -2,6 +2,7 @@ import express from 'express';
 import { protect } from '../middleware/auth.js';
 import Ticket from '../models/Ticket.js';
 import Message from '../models/Message.js';
+import User from '../models/User.js';
 import { uploadAttachment } from '../config/cloudinary.js';
 
 const router = express.Router();
@@ -30,9 +31,22 @@ router.get('/:ticketId/messages', protect, async (req, res) => {
 
         const messages = await Message.find(query)
             .sort({ createdAt: -1 })
-            .limit(Number(limit));
+            .limit(Number(limit))
+            .lean();
 
-        res.json(messages.reverse());
+        const usernames = [...new Set(messages.map(m => m.senderUsername))];
+        const users = await User.find({ username: { $in: usernames } }).select('username avatarUrl').lean();
+        const avatarMap = users.reduce((acc, user) => {
+            acc[user.username] = user.avatarUrl;
+            return acc;
+        }, {});
+
+        const messagesWithAvatars = messages.map(m => ({
+            ...m,
+            senderAvatarUrl: avatarMap[m.senderUsername] || ''
+        }));
+
+        res.json(messagesWithAvatars.reverse());
     } catch (err) {
         res.status(500).json({ error: err.message });
     }

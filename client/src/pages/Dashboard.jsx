@@ -313,7 +313,7 @@ export default function Dashboard() {
                 </div>
             </header>
 
-            <div className="dashboard-body">
+            <div className={`dashboard-body ${selectedId ? 'ticket-selected' : ''}`}>
                 <aside className="sidebar">
                     {role === 'student' && (
                         <div className="sidebar-section">
@@ -432,22 +432,38 @@ export default function Dashboard() {
                                         {loadingHistory ? '...' : t('loadOlder')}
                                     </button>
                                 )}
-                                {messages.map(msg => (
-                                    <div key={msg._id} className={`message ${msg.senderUsername === username ? 'own' : 'other'}`}>
-                                        {msg.senderUsername !== username && (
-                                            <div className="message-sender">{msg.senderUsername}</div>
-                                        )}
-                                        {msg.text && <div className="message-text">{msg.text}</div>}
-                                        {msg.attachment?.url && (
-                                            <div className="message-attachment">
-                                                <a href={msg.attachment.url} target="_blank" rel="noopener noreferrer">
-                                                    {msg.attachment.name || t('attachment')}
-                                                </a>
+                                {messages.map(msg => {
+                                    const isImage = msg.attachment?.url?.match(/\.(jpeg|jpg|gif|png|webp)(\?.*)?$/i);
+                                    return (
+                                        <div key={msg._id} className={`message-wrapper ${msg.senderUsername === username ? 'own' : 'other'}`}>
+                                            <div className="message-avatar">
+                                                {msg.senderAvatarUrl ? (
+                                                    <img src={msg.senderAvatarUrl} alt="" className="avatar-img" />
+                                                ) : (
+                                                    <div className="avatar-placeholder">{msg.senderUsername.charAt(0).toUpperCase()}</div>
+                                                )}
                                             </div>
-                                        )}
-                                        <div className="message-time">{formatTime(msg.createdAt)}</div>
-                                    </div>
-                                ))}
+                                            <div className={`message ${msg.senderUsername === username ? 'own' : 'other'}`}>
+                                                {msg.senderUsername !== username && (
+                                                    <div className="message-sender">{msg.senderUsername}</div>
+                                                )}
+                                                {msg.text && <div className="message-text">{msg.text}</div>}
+                                                {msg.attachment?.url && (
+                                                    <div className="message-attachment">
+                                                        {isImage ? (
+                                                            <img src={msg.attachment.url} alt={msg.attachment.name || t('attachment')} className="attachment-image" />
+                                                        ) : (
+                                                            <a href={msg.attachment.url} target="_blank" rel="noopener noreferrer">
+                                                                {msg.attachment.name || t('attachment')}
+                                                            </a>
+                                                        )}
+                                                    </div>
+                                                )}
+                                                <div className="message-time">{formatTime(msg.createdAt)}</div>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
                                 {remoteTyping && (
                                     <div className="typing-indicator fade-in">
                                         {remoteTyping} {t('typing')}

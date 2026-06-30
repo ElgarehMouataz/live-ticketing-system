@@ -1,6 +1,7 @@
 import mongoose from 'mongoose';
 import bcrypt from 'bcrypt';
 import User from './models/User.js';
+import Organization from './models/Organization.js';
 import 'dotenv/config';
 
 const seedDatabase = async () => {
@@ -8,10 +9,20 @@ const seedDatabase = async () => {
         await mongoose.connect(process.env.MONGO_URI);
         console.log('Connected to MongoDB for seeding.');
 
+        let demoOrg = await Organization.findOne({ inviteCode: 'DEMO-ORG' });
+        if (!demoOrg) {
+            demoOrg = await Organization.create({
+                name: 'Demo University',
+                inviteCode: 'DEMO-ORG',
+                branding: { primaryColor: '#007bff' }
+            });
+            console.log('Created Demo Organization.');
+        }
+
         const demoAccounts = [
-            { username: 'student_demo', role: 'student', password: 'password123' },
-            { username: 'agent_demo', role: 'agent', password: 'password123' },
-            { username: 'admin_demo', role: 'admin', password: 'password123' }
+            { username: 'student_demo', role: 'student', password: 'password123', organizationId: demoOrg._id },
+            { username: 'agent_demo', role: 'agent', password: 'password123', organizationId: demoOrg._id },
+            { username: 'admin_demo', role: 'admin', password: 'password123', organizationId: demoOrg._id }
         ];
 
         for (const account of demoAccounts) {
@@ -21,7 +32,8 @@ const seedDatabase = async () => {
                 await User.create({
                     username: account.username,
                     role: account.role,
-                    password: hashed
+                    password: hashed,
+                    organizationId: account.organizationId
                 });
                 console.log(`Created ${account.role} demo account: ${account.username}`);
             } else {

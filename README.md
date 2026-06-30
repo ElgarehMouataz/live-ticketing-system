@@ -14,12 +14,20 @@ SocketSupport is a real-time, role-based ticketing and customer support applicat
 
 ## Database Schemas
 
+### Organization (Tenant)
+| Field | Type | Notes |
+|---|---|---|
+| `name` | String | required |
+| `inviteCode` | String | unique, used for student registration |
+| `branding` | Object | `{ logoUrl, primaryColor }` |
+
 ### User
 | Field | Type | Notes |
 |---|---|---|
 | `username` | String | unique, indexed |
 | `password` | String | bcrypt hashed |
 | `role` | String | enum: student, agent |
+| `organizationId`| ObjectId | ref: Organization |
 | `avatarUrl` | String | optional, Cloudinary URL |
 | `settings` | Object | language, theme, fontSize |
 
@@ -28,6 +36,7 @@ SocketSupport is a real-time, role-based ticketing and customer support applicat
 |---|---|---|
 | `studentId` | ObjectId | ref: User |
 | `agentId` | ObjectId | ref: User, nullable |
+| `organizationId`| ObjectId | ref: Organization |
 | `subject` | String | required |
 | `status` | String | enum: open, active, resolved |
 | `urgency` | String | enum: low, medium, high |
@@ -142,8 +151,8 @@ As a portfolio demonstration piece, this architecture prioritizes core functiona
 - Immutable demo accounts and secure database seeding.
 - Cloudinary integration for avatars and attachments.
 
-### Phase 2: Multi-Tenant SaaS Architecture (Upcoming)
-- **Data Isolation:** Strict separation of tickets, agents, and students per establishment.
+### Phase 2: Multi-Tenant SaaS Architecture (In Progress)
+- **Data Isolation:** Strict separation of tickets, agents, and students per establishment via the `Organization` model.
 - **Socket Segmentation:** Dynamic socket rooms (`org_<id>_agents`) to prevent cross-organization data leakage.
 - **Branded Portals:** UI updates to reflect the specific school or organization the user belongs to.
 
