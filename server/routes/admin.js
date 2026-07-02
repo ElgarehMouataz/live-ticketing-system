@@ -12,7 +12,7 @@ router.use(protect, authorizeRoles('admin'));
 // Get all agents
 router.get('/agents', async (req, res) => {
     try {
-        const agents = await User.find({ role: 'agent' }).select('-password').sort({ createdAt: -1 });
+        const agents = await User.find({ role: 'agent', organizationId: req.user.organizationId }).select('-password').sort({ createdAt: -1 });
         res.json(agents);
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -43,6 +43,7 @@ router.post('/agents', async (req, res) => {
             username,
             password: hashed,
             role: 'agent', // Strictly forced to agent
+            organizationId: req.user.organizationId
         });
 
         res.status(201).json({ 

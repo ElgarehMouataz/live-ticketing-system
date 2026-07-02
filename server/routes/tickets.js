@@ -11,8 +11,8 @@ const router = express.Router();
 router.get('/', protect, async (req, res) => {
     try {
         const query = req.user.role === 'agent'
-            ? { $or: [{ agentId: req.user.userId }, { status: 'open' }] }
-            : { studentId: req.user.userId };
+            ? { organizationId: req.user.organizationId, $or: [{ agentId: req.user.userId }, { status: 'open' }] }
+            : { studentId: req.user.userId, organizationId: req.user.organizationId };
 
         const tickets = await Ticket.find(query).sort({ createdAt: -1 });
         res.json(tickets);
@@ -25,6 +25,10 @@ router.get('/', protect, async (req, res) => {
 router.get('/:ticketId/messages', protect, async (req, res) => {
     try {
         const { before, limit = 30 } = req.query;
+
+        // Verify ticket belongs to the user's organization
+        const ticket = await Ticket.findOne({ _id: req.params.ticketId, organizationId: req.user.organizationId });
+        if (!ticket) return res.status(404).json({ error: 'Ticket not found or unauthorized' });
 
         const query = { ticketId: req.params.ticketId };
         if (before) query.createdAt = { $lt: new Date(before) };
